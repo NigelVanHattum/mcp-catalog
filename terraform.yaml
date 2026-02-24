@@ -258,7 +258,7 @@ env:
 - name: Terraform Cloud/Enterprise Token
   key: TFE_TOKEN
   description: Your Terraform Cloud or Enterprise API token for authentication. Generate from User Settings > Tokens in Terraform Cloud.
-  required: true
+  required: false
   sensitive: true
 - name: Terraform Address
   key: TFE_ADDRESS
