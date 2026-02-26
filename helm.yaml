@@ -1,0 +1,125 @@
+name: Helm
+shortDescription: Interact with Helm repositories and charts via MCP
+description: |
+  An MCP (Model Context Protocol) server that provides tools for interacting with Helm repositories and charts. This server enables AI assistants to query Helm repositories, retrieve chart information, and access chart values without requiring local Helm installation.
+
+  The purpose of using MCP for Helm is to avoid making up format of `values.yaml` and contents of the charts when working with LLMs. Instead, the server provides a standardized way to access this information, making it easier for AI assistants to interact with Helm charts and repositories.
+
+  This MCP server provides tools for working with Helm repositories only. If you need to work with other Kubernetes resources, consider using a separate MCP server that provides tools for Kubernetes resources.
+
+  ## Features
+  - **list_repository_charts** - Lists all charts available in a Helm repository (or chart name for OCI registries)
+  - **list_chart_versions** - Lists all available versions/tags for a chart
+  - **get_latest_version_of_chart** - Retrieves the latest version of a specific chart
+  - **get_chart_values** - Retrieves the values file for a chart (latest version or specific version)
+  - **get_chart_contents** - Retrieves the contents of a chart (including templates, values, and metadata)
+  - **get_chart_dependencies** - Retrieves the dependencies of a chart as defined in its `Chart.yaml` file
+  - **get_chart_images** - Extracts container images used in a Helm chart by rendering templates and parsing Kubernetes manifests
+
+  ### Repository Types
+
+  All tools support both traditional HTTP Helm repositories and OCI registries:
+
+  | Repository Type  | Example URL                        |
+  |------------------|------------------------------------|
+  | HTTP Repository  | `https://charts.example.com`       |
+  | OCI Registry     | `oci://ghcr.io/org/charts/mychart` |
+  | OCI (Docker Hub) | `oci://docker.io/library/mysql`    |
+
+metadata:
+  categories: Kubernetes, DevOps, Automation
+  icon: https://helm.sh/img/helm.svg
+  repoURL: https://github.com/zekker6/mcp-helm
+
+toolPreview:
+- name: list_repository_charts
+  description: Lists all charts available in the repository. For OCI registries, returns the chart name from the reference (OCI repos contain a single chart with multiple version tags).
+  params:
+    repository_url: "Helm repository URL. Supports HTTP repos (e.g., 'https://charts.example.com') and OCI registries (e.g., 'oci://ghcr.io/org/charts/mychart')"
+- name: list_chart_versions
+  description: Lists all available versions (tags) for a chart. For OCI registries, this lists all tags. For HTTP repositories, lists all versions from the index.
+  params:
+    repository_url: "Helm repository URL. Supports HTTP repos and OCI registries"
+    chart_name: "Chart name. For OCI URLs that already include the chart name, this can be empty"
+- name: get_latest_version_of_chart
+  description: Retrieves the latest version of the chart. For OCI registries, returns the latest semver tag.
+  params:
+    repository_url: "Helm repository URL. Supports HTTP repos and OCI registries"
+    chart_name: "Chart name. For OCI URLs that already include the chart name, this can be empty"
+- name: get_chart_values
+  description: Retrieves values file for the chart. Supports both HTTP repositories and OCI registries.
+  params:
+    repository_url: "Helm repository URL. Supports HTTP repos and OCI registries"
+    chart_name: "Chart name. For OCI URLs that already include the chart name, this can be empty"
+    chart_version: "Optional. Chart version. If omitted the latest version will be used"
+- name: get_chart_contents
+  description: Retrieves full chart contents. Supports both HTTP repositories and OCI registries.
+  params:
+    repository_url: "Helm repository URL. Supports HTTP repos and OCI registries"
+    chart_name: "Chart name. For OCI URLs that already include the chart name, this can be empty"
+    chart_version: "Optional. Chart version. If omitted the latest version will be used"
+    recursive: "Optional. If true, retrieves all files in the chart recursively. Defaults to false"
+- name: get_chart_dependencies
+  description: Retrieves dependencies for the chart. Supports both HTTP repositories and OCI registries.
+  params:
+    repository_url: "Helm repository URL. Supports HTTP repos and OCI registries"
+    chart_name: "Chart name. For OCI URLs that already include the chart name, this can be empty"
+    chart_version: "Optional. Chart version. If omitted the latest version will be used"
+- name: get_chart_images
+  description: Extracts container images used in a Helm chart by rendering templates and parsing Kubernetes manifests. Supports both HTTP repositories and OCI registries.
+  params:
+    repository_url: "Helm repository URL. Supports HTTP repos and OCI registries"
+    chart_name: "Chart name. For OCI URLs that already include the chart name, this can be empty"
+    chart_version: "Optional. Chart version. If omitted the latest version will be used"
+    recursive: "Optional. If true, extracts images from subcharts as well. Defaults to false"
+    custom_values: "Optional. JSON object of custom values to override chart defaults (e.g., '{\"image.tag\": \"v2\"}')"
+
+env:
+- name: Username
+  key: HELM_USERNAME
+  description: Username for authentication (works for both OCI and HTTP repos)
+  required: false
+  sensitive: false
+- name: Password File
+  key: HELM_PASSWORD_FILE
+  description: Path to file containing password
+  required: false
+  sensitive: true
+- name: Registry Credentials
+  key: HELM_REGISTRY_CREDENTIALS
+  description: Path to Docker-style credentials file (e.g., '~/.docker/config.json')
+  required: false
+  sensitive: false
+- name: TLS Certificate
+  key: HELM_TLS_CERT
+  description: Path to TLS client certificate file for HTTP repositories
+  required: false
+  sensitive: false
+- name: TLS Key
+  key: HELM_TLS_KEY
+  description: Path to TLS client key file for HTTP repositories
+  required: false
+  sensitive: true
+- name: TLS CA
+  key: HELM_TLS_CA
+  description: Path to CA certificate file for verifying server certificates
+  required: false
+  sensitive: false
+- name: TLS Insecure Skip Verify
+  key: HELM_TLS_INSECURE_SKIP_VERIFY
+  description: Skip TLS certificate verification (insecure, for development only)
+  required: false
+  sensitive: false
+
+runtime: containerized
+containerizedConfig:
+  image: ghcr.io/zekker6/mcp-helm:v1.3.1
+  port: 8080
+  path: "/mcp"
+  args:
+  - mcp-helm
+  - -mode=http
+  - --transport-port
+  - 8080
+  - --transport-host
+  - 0.0.0.0
